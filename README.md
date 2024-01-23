@@ -11,7 +11,7 @@ _Attention: You will need [Python 3.6](https://www.python.org/downloads/) or gre
 
 ```sh
 $ git clone https://github.com/Vizardx/Zoom_Meetings_Participants_Retriever
-$ cd Zoom_Cloud_Recordings_Downloader
+$ cd Zoom_Meetings_Participants_Retriever
 $ pip3 install -r requirements.txt
 ```
 
