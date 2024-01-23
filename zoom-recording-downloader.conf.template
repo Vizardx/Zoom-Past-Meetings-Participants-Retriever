@@ -1,0 +1,7 @@
+{
+	"OAuth": {
+		"account_id": "YOUR account_id",
+		"client_id": "YOUR client_id",
+		"client_secret": "YOUR client_secret"
+	}
+}
