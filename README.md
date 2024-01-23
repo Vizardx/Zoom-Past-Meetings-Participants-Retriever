@@ -1,6 +1,6 @@
 # Zoom_Meeting_Participants_Retriever
 
-!Python 3.6(https://www.python.org/) !License[https://raw.githubusercontent.com/Vizardx/Zoom_Meetings_Participants_Retriever/main/LICENSE]
+
 **Zoom Meeting Participants Retriever** is a cross-platform Python script that uses Zoom's API (v2) to retrieve and organize all meeting assistants from a Zoom account onto local storage.
 
 
