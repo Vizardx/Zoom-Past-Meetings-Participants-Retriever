@@ -10,17 +10,13 @@ from urllib.parse import quote
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
-# Crea una sesión de requests
+# Retry Strategy
 session = requests.Session()
-
-# Crea un objeto Retry
 retry = Retry(
     total=5,
     backoff_factor=0.1,
     status_forcelist=[500, 502, 503, 504],
 )
-
-# Monta el adaptador HTTP para todas las URLs
 adapter = HTTPAdapter(max_retries=retry)
 session.mount("http://", adapter)
 session.mount("https://", adapter)
@@ -181,21 +177,13 @@ def get_meeting_participants(meeting_id, user_info, topic, duration, uuid, ):
         }
         response = session.get(url=url, headers=AUTHORIZATION_HEADER, params=params)
 
-        # Verifica que la respuesta no esté vacía.
         if not response.content:
             raise ValueError(f"La respuesta de la API está vacía.")
-
-        # Verifica que la respuesta esté en formato JSON.
         if response.headers["Content-Type"] != "application/json;charset=UTF-8":
             print(response.content)
             raise ValueError(f"La respuesta de la API no está en formato JSON.")
-
-        # Obtiene la respuesta de la API como un objeto Python.
         data = response.json()
-
-        # Verifica si 'participants' está en data.
         if 'participants' in data:
-            # Añade la información del usuario, el tema y la duración a cada participante.
             for participant in data["participants"]:
                 participant["user_info"] = user_info
                 participant["topic"] = topic
@@ -205,21 +193,19 @@ def get_meeting_participants(meeting_id, user_info, topic, duration, uuid, ):
             all_participants.extend(data["participants"])
 
         else:
-            print(f"No se encontraron participantes para la reunión {meeting_id}")
+            print(f"No participants found for the meeting {meeting_id}")
 
-        # Pausa durante 0.5 segundos para evitar alcanzar el límite de la tasa de solicitudes.
+        # Avoid API limits
         time.sleep(0.5)
-
-        # Si no hay un token para la siguiente página, entonces hemos llegado al final.
         if not data.get('next_page_token'):
             break
 
         next_page_token = data['next_page_token']
-        print("Next_Page_Token reinicado!")
+        print("Next_Page_Token reset!")
 
     return all_participants
 
-# Funciones de preprocesamiento de datos para sacar columnas cruzables
+# Optional data processing operations for anonymous accounts
 def extract_email(name):
     match = re.search(r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', name)
     return match.group() if match else None
@@ -234,12 +220,10 @@ def extract_full_name(name):
     return result if result and ' ' in result else None
 
 def main():
-    # Carga el token de acceso
     load_access_token()
     last_token_load_time = time.time()
     
     
-    # Obtiene todos los usuarios
     print("Obteniendo todos los usuarios...")
     users = get_users()
 
@@ -249,23 +233,23 @@ def main():
         userInfo = (
             f"{first_name} {last_name} - {email}" if first_name and last_name else f"{email}"
         )
-        print(f"\nProcesando el usuario {userInfo}")
+        print(f"\nGetting user {userInfo}")
         
         # Obtiene todas las grabaciones para el usuario en el plazo especificado
         recordings = list_recordings(user_id)
 
         for recording in recordings:
             meeting_id = recording["uuid"]
-            print(f"Obteniendo participantes para la reunión {meeting_id}")
+            print(f"Getting meeting participants {meeting_id}")
             
             participants = get_meeting_participants(meeting_id, userInfo, recording['topic'], recording['duration'], recording['uuid'])
             all_participants.extend(participants)
 
-            # Recarga el token de acceso cada 55 minutos
+            # Reloads token if about to expire
             if time.time() - last_token_load_time >= 55 * 60:
                 load_access_token()
                 last_token_load_time = time.time()
-                print("Reiniciando Token . . .")
+                print("Reloading Token . . .")
 
     df = pd.DataFrame(all_participants)
 
@@ -274,7 +258,7 @@ def main():
     df['Nombre completo'] = df['name'].apply(extract_full_name)
     df['No procesable'] = df.apply(lambda row: None if row['Email'] or row['DNI'] or row['Nombre completo'] else row['name'], axis=1)
     df.to_csv("Zoom_Assistants_01-09-23__16-01-23.csv", index=False, encoding='utf-8')
-    print("Proceso finalizado con exito!")
+    print("FINISHED!")
 
 if __name__ == "__main__":
     main()
